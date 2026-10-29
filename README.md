@@ -43,7 +43,10 @@ As tarefas são organizadas em três etapas:
 
 1. Clone o repositório:
 
-git clone <https://github.com/giosantos99/MyKanban.git>
+[Clique aqui para clonar o repositório](https://github.com/giosantos99/my-kanban.git) ou utilizando o comando abaixo no terminal:
+   ```bash
+   git clone https://github.com/giosantos99/my-kanban.git
+```
 
 2. Entre na pasta do projeto:
 
