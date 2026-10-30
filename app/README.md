@@ -6,6 +6,8 @@ O projeto permite criar, editar, excluir e organizar tarefas entre diferentes et
 
 ![MyKanban](./public/mykanban-preview.gif)
 
+🌐 **Acesse a aplicação:** [MyKanban](https://my-kanban-tasks.vercel.app/)
+
 ## Funcionalidades
 
 - Criar tarefas
