@@ -119,6 +119,7 @@ export default {
     return {
       loading: false,
       mostrarComemoracao: false,
+      dadosCarregados: false,
       paineis: [
         {
           status: 'Fazer',
@@ -139,268 +140,216 @@ export default {
           ordenacao_painel: 3
         }
       ],
-      tarefas: {}
+      tarefas: {
+        fazer: [],
+        fazendo: [],
+        feito: []
+      },
     }
   },
 
   methods: {
-    async moverTarefaMobile (action, painel, tarefa, index) {
-      const from = action === 'arrow_drop_up' ? index - 1 : index + 1
+    normalizarPainel (status) {
+      const lista = this.tarefas[status] || []
 
-      const tarefas = this.tarefas[painel]
-
-      tarefas.splice(index, 0, tarefas.splice(from, 1)[0])
-
-      this.tarefas[painel] = tarefas.map((tarefa, ordenacao_tarefa) => ({
+      this.tarefas[status] = lista.map((tarefa, index) => ({
         ...tarefa,
-        ordenacao_tarefa
+        status,
+        ordenacao_tarefa: index
       }))
+    },
 
-      await this.onDragDrop(
-        { added: undefined, moved: { element: tarefa } },
+    verificarComemoracao () {
+      const { fazer, fazendo, feito } = this.tarefas
+
+      if (!fazer.length && !fazendo.length && feito.length > 0) {
+        this.mostrarComemoracao = true
+
+        setTimeout(() => {
+          this.mostrarComemoracao = false
+        }, 1600)
+      }
+    },
+
+    moverTarefaMobile (action, painel, tarefa, index) {
+      const destino = action === 'arrow_drop_up'
+        ? index - 1
+        : index + 1
+
+      const lista = this.tarefas[painel]
+
+      if (destino < 0 || destino >= lista.length) return
+
+      const [tarefaMovida] = lista.splice(index, 1)
+
+      lista.splice(destino, 0, tarefaMovida)
+
+      this.onDragDrop(
+        { moved: { element: tarefaMovida } },
         this.tarefas,
         painel
       )
-
     },
 
-    async alterarPainelMobile (novoPainel, painelAtual, tarefa) {
+    alterarPainelMobile (novoPainel, painelAtual, tarefa) {
+      if (novoPainel === painelAtual) return
 
-      this.tarefas[novoPainel].push(tarefa)
-      this.tarefas[painelAtual] = this.tarefas[painelAtual]?.filter(({ id }) => id !== tarefa.id)
+      this.tarefas[novoPainel].push({ ...tarefa })
 
-      await this.onDragDrop(
-        { moved: undefined, added: { element: { ...tarefa }} },
+      this.tarefas[painelAtual] = this.tarefas[painelAtual].filter(
+        item => item.id !== tarefa.id
+      )
+
+      this.onDragDrop(
+        {
+          added: {
+            element: { ...tarefa }
+          }
+        },
         this.tarefas,
         novoPainel
       )
-      await this.onDragDrop(
-        { moved: undefined, added: undefined },
+
+      this.onDragDrop(
+        {},
         this.tarefas,
         painelAtual
       )
 
-      const containerPainel = document.querySelector(`.painel-${novoPainel}`)
+      const containerPainel = document.querySelector(
+        `.painel-${novoPainel}`
+      )
 
       containerPainel?.scrollIntoView({
         behavior: 'smooth'
       })
-
     },
 
-    async onDragDrop ({ moved, added }, _tarefas, status) {
-      try {
-        this.tarefas = _tarefas
+    onDragDrop (evt = {}, _tarefas, status) {
+      this.tarefas = _tarefas
 
-        const elAdicionado = added?.element
-        const elMovido = moved?.element
+      const { added } = evt
 
-        if (elMovido) {
-          this.tarefas[status] = this.tarefas[status].map(
-            (tarefa, index) => ({
-              ...tarefa,
-              ordenacao_tarefa: index
-            })
-          )
-
-          await Promise.all(
-            this.tarefas[status].map(tarefa =>
-              this.$api.put(
-                `${status}/${tarefa.id}`,
-                tarefa
-              )
-            )
-          )
-        }
-
-        if (elAdicionado) {
-
-          const statusAnterior = elAdicionado.status
-
-          const { data: novaTarefa } = await this.fnAdicionarTarefa(
-            status,
-            elAdicionado.descricao,
-            false
-          )
-
-          await this.excluirTarefa(
-            statusAnterior,
-            elAdicionado.id,
-            false
-          )
-
-          const index = this.tarefas[status].findIndex(
-            tarefa => tarefa.id === elAdicionado.id
-          )
-
-          if (index !== -1) this.tarefas[status].splice(index, 1, novaTarefa)
-
-          this.tarefas[status] = this.tarefas[status].map(
-            (tarefa, index) => ({
-              ...tarefa,
-              status,
-              ordenacao_tarefa: index
-            })
-          )
-
-          await Promise.all(
-            this.tarefas[status].map(tarefa =>
-              this.$api.put(
-                `${status}/${tarefa.id}`,
-                tarefa
-              )
-            )
-          )
-
-          this.tarefas[statusAnterior] =
-            this.tarefas[statusAnterior].map(
-              (tarefa, index) => ({
-                ...tarefa,
-                ordenacao_tarefa: index
-              })
-            )
-
-          await Promise.all(
-            this.tarefas[statusAnterior].map(tarefa =>
-              this.$api.put(
-                `${statusAnterior}/${tarefa.id}`,
-                tarefa
-              )
-            )
-          )
-
-        const { fazer, fazendo, feito } = this.tarefas
-
-        if ( !fazer.length && !fazendo.length && feito.length > 0 ) {
-          this.mostrarComemoracao = true
-
-          setTimeout(() => this.mostrarComemoracao = false, 1600)
-        }
+      if (added?.element) {
+        added.element.status = status
       }
 
-      } catch {
-        this.$q.notify({
-          color: 'negative',
-          message: 'Ocorreu um erro ao mudar a posição da tarefa'
-        })
+      this.normalizarPainel(status)
 
-        await this.fetchTarefas()
-      }
+      if (added?.element && status === 'feito') this.verificarComemoracao()
     },
 
     excluirTarefasDoPainel ({ status, id }) {
       const dialog = this.$q.dialog({
-        component: defineAsyncComponent(() => import('@/components/Modal/ModalNotificacao.vue')),
+        component: defineAsyncComponent(
+          () => import('@/components/Modal/ModalNotificacao.vue')
+        ),
         componentProps: {
           texto: `Tem certeza que deseja excluir todas as tarefas do painel "${status}" ?`,
           titulo: 'Excluir Tarefas'
         }
       })
 
-      dialog.onOk(async () => {
-        try {
-          const ids = this.tarefas[id]
-            ?.map(({ id }) => id)
-            ?? []
+      dialog.onOk(() => {
+        const quantidade = this.tarefas[id].length
 
-          if (!ids.length) return
+        if (!quantidade) return
 
-          await Promise.all(ids
-            .map(idTarefa => this.$api.delete(`${id}/${idTarefa}`))
-          )
+        this.tarefas[id] = []
 
-          await this.fetchTarefas()
-
-          this.$q.notify({
-            color: 'positive',
-            message: `${ids.length} tarefa(s) excluída(s) com sucesso`
-          })
-        } catch {
-          this.$q.notify({
-            color: 'negative',
-            message: 'Erro ao excluir as tarefas do painel'
-          })
-        }
+        this.$q.notify({
+          color: 'positive',
+          message: `${quantidade} tarefa(s) excluída(s) com sucesso`
+        })
       })
     },
 
-    async editarTarefa (painel, tarefa) {
-      try {
-        const dt_criacao = new Intl.DateTimeFormat('pt-Br', { dateStyle: 'short' }).format(new Date())
+    editarTarefa (painel, tarefa) {
+      const index = this.tarefas[painel].findIndex(
+        item => item.id === tarefa.id
+      )
 
-        await this.$api.put(`${painel}/${tarefa.id}`, {
-          ...tarefa,
-          dt_criacao
-        })
+      if (index === -1) return
 
-        this.fetchTarefas()
+      const dt_criacao = new Intl.DateTimeFormat(
+        'pt-BR',
+        { dateStyle: 'short' }
+      ).format(new Date())
 
-        this.$q.notify({
-          color: 'positive',
-          message: 'Tarefa editada com sucesso'
-        })
-      } catch {
-        this.$q.notify({
-          color: 'negative',
-          message: 'Erro ao editar a tarefa'
-        })
-      }
+      this.tarefas[painel].splice(index, 1, {
+        ...tarefa,
+        status: painel,
+        dt_criacao
+      })
+
+      this.$q.notify({
+        color: 'positive',
+        message: 'Tarefa editada com sucesso'
+      })
     },
 
-    async excluirTarefa (painel, id, notificacao = true) {
-      try {
-        await this.$api.delete(`${painel}/${id}`)
+    excluirTarefa (painel, id, notificacao = true) {
+      const quantidadeAnterior = this.tarefas[painel].length
 
-        notificacao && this.fetchTarefas()
+      this.tarefas[painel] = this.tarefas[painel].filter(
+        tarefa => tarefa.id !== id
+      )
 
-        notificacao && this.$q.notify({
+      if (this.tarefas[painel].length === quantidadeAnterior) return
+
+      this.normalizarPainel(painel)
+
+      if (notificacao) {
+        this.$q.notify({
           color: 'positive',
           message: 'Tarefa excluída com sucesso'
         })
-      } catch {
-        this.$q.notify({
-          color: 'negative',
-          message: 'Erro ao excluir a tarefa'
-        })
       }
     },
 
-    async fnAdicionarTarefa (status, descricao, notificacao = true) {
-      try {
-        const ordenacao_tarefa = this.tarefas[status]?.length
-          ? Math.max(...this.tarefas[status].map(({ ordenacao_tarefa }) => ordenacao_tarefa)) + 1
-          : 0
+    fnAdicionarTarefa (status, descricao, notificacao = true) {
+      const lista = this.tarefas[status]
 
-        const dt_criacao = new Intl.DateTimeFormat('pt-Br', {
-            dateStyle: 'short'
-          }).format(new Date())
+      const ordenacao_tarefa = lista.length
+        ? Math.max(
+            ...lista.map(tarefa => tarefa.ordenacao_tarefa)
+          ) + 1
+        : 0
 
-        const data = await this.$api.post(status, {
-          status,
-          descricao,
-          ordenacao_tarefa,
-          dt_criacao
-        })
+      const dt_criacao = new Intl.DateTimeFormat(
+        'pt-BR',
+        { dateStyle: 'short' }
+      ).format(new Date())
 
-        notificacao && this.fetchTarefas()
+      const id = globalThis.crypto?.randomUUID
+        ? globalThis.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
-        notificacao &&  this.$q.notify({
+      const novaTarefa = {
+        id,
+        status,
+        descricao,
+        ordenacao_tarefa,
+        dt_criacao
+      }
+
+      lista.push(novaTarefa)
+
+      if (notificacao) {
+        this.$q.notify({
           color: 'positive',
           message: 'Tarefa adicionada com sucesso'
         })
-
-        return data
-      } catch {
-        this.$q.notify({
-          color: 'negative',
-          message: 'Ocorreu um erro ao adicionar a tarefa'
-        })
       }
+
+      return novaTarefa
     },
 
     modalAdicionarTarefa () {
       const dialog = this.$q.dialog({
-        component: defineAsyncComponent(() => import('@/components/Modal/ModalForm.vue')),
+        component: defineAsyncComponent(
+          () => import('@/components/Modal/ModalForm.vue')
+        )
       })
 
       dialog.onOk(({ tarefa }) => {
@@ -416,27 +365,54 @@ export default {
       })
     },
 
-    async fetchTarefas () {
+    fetchTarefas () {
       try {
         this.loading = true
 
-        const { data: fazer } = await this.$api.get('fazer?_sort=ordenacao_tarefa')
-        const { data: fazendo } = await this.$api.get('fazendo?_sort=ordenacao_tarefa')
-        const { data: feito } = await this.$api.get('feito?_sort=ordenacao_tarefa')
+        const dadosSalvos = localStorage.getItem('mykanban_tarefas')
 
-        this.tarefas = {
-          fazer,
-          fazendo,
-          feito
+        if (dadosSalvos) {
+          const dados = JSON.parse(dadosSalvos)
+
+          this.tarefas = {
+            fazer: Array.isArray(dados.fazer) ? dados.fazer : [],
+            fazendo: Array.isArray(dados.fazendo) ? dados.fazendo : [],
+            feito: Array.isArray(dados.feito) ? dados.feito : []
+          }
         }
-
       } catch {
         this.$q.notify({
           color: 'negative',
-          message: 'Erro ao buscar os dados das tarefas'
+          message: 'Erro ao carregar as tarefas salvas'
         })
       } finally {
+        this.dadosCarregados = true
         this.loading = false
+      }
+    }
+  },
+
+
+  watch: {
+    tarefas: {
+      deep: true,
+
+      handler (novasTarefas) {
+        if (!this.dadosCarregados) return
+
+        try {
+          localStorage.setItem(
+            'mykanban_tarefas',
+            JSON.stringify(novasTarefas)
+          )
+        } catch (error) {
+          console.error('Erro ao salvar tarefas:', error)
+
+          this.$q.notify({
+            color: 'negative',
+            message: 'Não foi possível salvar as tarefas no navegador'
+          })
+        }
       }
     }
   },

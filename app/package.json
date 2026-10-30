@@ -10,15 +10,11 @@
     "lint": "prettier --write \"**/*.{js,vue,css,scss,html,md,json}\" --ignore-path .gitignore && eslint --fix -c ./eslint.config.js \"./src*/**/*.{js,cjs,mjs,vue}\"",
     "lint:check": "prettier \"**/*.{js,vue,css,scss,html,md,json}\" --ignore-path .gitignore && eslint -c ./eslint.config.js \"./src*/**/*.{js,cjs,mjs,vue}\"",
     "dev": "quasar dev",
-    "api": "json-server --watch db/db.json",
-    "dev:all": "concurrently \"npm run dev\" \"npm run api\"",
     "build": "quasar build",
     "postinstall": "quasar prepare --silent"
   },
   "dependencies": {
     "@quasar/extras": "^2.0.3",
-    "axios": "^1.19.0",
-    "json-server": "^1.0.0-beta.15",
     "quasar": "^2.24.0",
     "vue": "^3.5.22",
     "vue-router": "^5.0.6",
@@ -29,7 +25,6 @@
     "@quasar/app-vite": "^3.5.0",
     "@vue/eslint-config-prettier": "^10.2.0",
     "autoprefixer": "^10.4.27",
-    "concurrently": "^10.0.5",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.4.0",
