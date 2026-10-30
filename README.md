@@ -2,9 +2,11 @@
 
 Aplicação de gerenciamento de tarefas baseada no modelo Kanban, desenvolvida com Vue.js e Quasar Framework.
 
-O projeto permite criar, editar, excluir e organizar tarefas entre diferentes etapas do fluxo de trabalho.
+O projeto permite criar, editar, excluir e organizar tarefas entre diferentes etapas do fluxo de trabalho, com persistência dos dados utilizando o armazenamento local do navegador (localStorage).
 
-![MyKanban](app/public/mykanban-preview.gif)
+![MyKanban](./public/mykanban-preview.gif)
+
+🌐 **Acesse a aplicação:** [MyKanban](https://my-kanban-tasks.vercel.app/)
 
 ## Funcionalidades
 
@@ -24,10 +26,9 @@ O projeto permite criar, editar, excluir e organizar tarefas entre diferentes et
 - Vue.js 3
 - Quasar Framework
 - JavaScript
-- Axios
 - Vue Draggable
-- JSON Server
 - Sass
+- localStorage
 
 ## Estrutura do Kanban
 
@@ -43,14 +44,13 @@ As tarefas são organizadas em três etapas:
 
 1. Clone o repositório:
 
-[Clique aqui para clonar o repositório](https://github.com/giosantos99/my-kanban.git) ou utilizando o comando abaixo no terminal:
-   ```bash
-   git clone https://github.com/giosantos99/my-kanban.git
+```bash
+git clone <https://github.com/giosantos99/my-kanban.git>
 ```
 
 2. Entre na pasta do projeto:
 
-cd to-do-drag-drop/app
+cd my-kanban/app
 
 3. Instale as dependências:
 
@@ -59,30 +59,28 @@ npm install
 
 ## Executando o projeto
 
-O projeto utiliza o Quasar para o frontend e o JSON Server para simular a API.
+Inicie a aplicação em ambiente de desenvolvimento:
 
-## Frontend
-
-Inicie a aplicação:
-
-quasar dev ou npm run dev
+```bash
+npm run dev
+```
 
 O Quasar iniciará a aplicação em:
 
 http://localhost:9000
 
-## Backend (JSON Server)
+## Persistência dos dados
 
-Em outro terminal, dentro da pasta app, execute:
+As tarefas são armazenadas no localStorage do navegador, permitindo que os dados permaneçam salvos mesmo após atualizar ou fechar a página.
 
-npm run api
+**Observação**: como os dados são armazenados localmente, eles ficam disponíveis apenas no navegador e dispositivo utilizados. Não existe sincronização automática entre diferentes dispositivos ou navegadores.
 
-O JSON Server será iniciado em:
+## Build para produção
 
-http://localhost:3000
+Para gerar a versão de produção da aplicação, execute:
 
-## Frontend + Backend
+```bash
+npm run build
+```
 
-Para iniciar os dois simultaneamente:
-
-npm run dev:all
+Os arquivos gerados estarão disponíveis no diretório de build configurado pelo Quasar.
