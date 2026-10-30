@@ -4,7 +4,7 @@ Aplicação de gerenciamento de tarefas baseada no modelo Kanban, desenvolvida c
 
 O projeto permite criar, editar, excluir e organizar tarefas entre diferentes etapas do fluxo de trabalho, com persistência dos dados utilizando o armazenamento local do navegador (localStorage).
 
-![MyKanban](./public/mykanban-preview.gif)
+![MyKanban](app/public/mykanban-preview.gif)
 
 🌐 **Acesse a aplicação:** [MyKanban](https://my-kanban-tasks.vercel.app/)
 
